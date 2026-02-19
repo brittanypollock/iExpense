@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct ExpenseItem: Identifiable, Codable {
+struct ExpenseItem: Identifiable, Codable, Equatable {
     var id = UUID()
     let name: String
     let type: String
@@ -22,6 +22,14 @@ class Expenses {
                 UserDefaults.standard.set(encoded, forKey: "Items")
             }
         }
+    }
+    
+    var personalItems: [ExpenseItem] {
+        items.filter { $0.type == "Personal" }
+    }
+    
+    var businessItems: [ExpenseItem] {
+        items.filter { $0.type == "Business" }
     }
     
     init() {
@@ -41,24 +49,14 @@ struct ContentView: View {
     
     @State private var showingAddExpense = false
     
+    
     var body: some View {
         NavigationStack {
             List {
-                ForEach(expenses.items) { item in
-                    HStack{
-                        VStack(alignment: .leading) {
-                            Text(item.name)
-                                .font(.headline)
-                            
-                            Text(item.type)
-                        }
-                        
-                        Spacer()
-                        
-                        Text(item.amount, format: .currency(code: "USD"))
-                    }
-                }
-                .onDelete(perform: removeItems)
+                
+                ExpenseSection(title: "Business", expenses: expenses.businessItems, deleteItems: removeBusinessItems)
+                
+                ExpenseSection(title: "Personal", expenses: expenses.personalItems, deleteItems: removePersonalItems)
             }
             .navigationTitle("iExpense")
             .toolbar {
@@ -72,8 +70,25 @@ struct ContentView: View {
         }
     }
     
-    func removeItems(at offsets: IndexSet) {
-        expenses.items.remove(atOffsets: offsets)
+    func removeItems(at offsets: IndexSet, in inputArray: [ExpenseItem]) {
+        var objectToDelete = IndexSet()
+        
+        for offset in offsets {
+            let item = inputArray[offset]
+            
+            if let index = expenses.items.firstIndex(of: item) {
+                objectToDelete.insert(index)
+            }
+        }
+        expenses.items.remove(atOffsets: objectToDelete)
+    }
+    
+    func removePersonalItems(at offset: IndexSet) {
+        removeItems(at: offset, in: expenses.personalItems)
+    }
+    
+    func removeBusinessItems(at offset: IndexSet) {
+        removeItems(at: offset, in: expenses.businessItems)
     }
 }
 
